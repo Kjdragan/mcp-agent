@@ -1,9 +1,17 @@
 import asyncio
 import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables from .env file
+env_path = Path(__file__).resolve().parents[2] / '.env'
+print(f"Loading .env from: {env_path}")
+load_dotenv(env_path)
+
+print(f"OPENAI_API_KEY loaded: {'OPENAI_API_KEY' in os.environ}")
 
 from mcp_agent.app import MCPApp
 from mcp_agent.agents.agent import Agent
-from mcp_agent.workflows.llm.augmented_llm_anthropic import AnthropicAugmentedLLM
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 
 app = MCPApp(name="mcp_basic_agent")
@@ -32,21 +40,7 @@ async def example_usage():
 
             llm = await finder_agent.attach_llm(OpenAIAugmentedLLM)
             result = await llm.generate_str(
-                message="Print the contents of mcp_agent.config.yaml verbatim",
-            )
-            logger.info(f"Result: {result}")
-
-            # Let's switch the same agent to a different LLM
-            llm = await finder_agent.attach_llm(AnthropicAugmentedLLM)
-
-            result = await llm.generate_str(
-                message="Print the first 2 paragraphs of https://www.anthropic.com/research/building-effective-agents",
-            )
-            logger.info(f"Result: {result}")
-
-            # Multi-turn conversations
-            result = await llm.generate_str(
-                message="Summarize those paragraphs in a 128 character tweet",
+                message="List all files in C:/Users/kevin/ClaudeMCPFolder",
             )
             logger.info(f"Result: {result}")
 
