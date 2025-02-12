@@ -1,17 +1,10 @@
 import asyncio
 import os
-from pathlib import Path
-from dotenv import load_dotenv
 
 from mcp_agent.app import MCPApp
 from mcp_agent.workflows.swarm.swarm import DoneAgent, SwarmAgent
 from mcp_agent.workflows.swarm.swarm_openai import OpenAISwarm
 from mcp_agent.human_input.handler import console_input_callback
-
-# Load environment variables from .env file
-env_path = Path(__file__).resolve().parents[2] / '.env'
-print(f"Loading .env from: {env_path}")
-load_dotenv(env_path)
 
 app = MCPApp(
     name="airline_customer_service", human_input_callback=console_input_callback
@@ -251,7 +244,7 @@ to LAX in Los Angeles. The flight # is 1919. The flight departure date is 3pm ET
     for test in test_inputs[:1]:
         result = await swarm.generate_str(test)
         logger.info(f"Result: {result}")
-        await swarm.set_agent(triage_agent)
+        swarm.set_agent(triage_agent)
 
     await triage_agent.shutdown()
 

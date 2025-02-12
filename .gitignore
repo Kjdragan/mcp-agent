@@ -174,4 +174,4 @@ _logs\
 
 
 
-.\examples\workflow_swarm\mcp_agent.secrets.yaml
+# .\examples\workflow_swarm\mcp_agent.secrets.yaml
