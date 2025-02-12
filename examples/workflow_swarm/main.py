@@ -1,10 +1,17 @@
 import asyncio
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
 from mcp_agent.app import MCPApp
 from mcp_agent.workflows.swarm.swarm import DoneAgent, SwarmAgent
 from mcp_agent.workflows.swarm.swarm_anthropic import AnthropicSwarm
 from mcp_agent.human_input.handler import console_input_callback
+
+# Load environment variables from .env file
+env_path = Path(__file__).resolve().parents[2] / '.env'
+print(f"Loading .env from: {env_path}")
+load_dotenv(env_path)
 
 app = MCPApp(
     name="airline_customer_service", human_input_callback=console_input_callback
