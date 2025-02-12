@@ -252,6 +252,19 @@ class HTTPTransport(FilteredEventTransport):
             self.batch.clear()
 
 
+class CompositeTransport(EventTransport):
+    """Transport that combines multiple transports into one."""
+
+    def __init__(self, transports: List[EventTransport]):
+        """Initialize with a list of transports."""
+        self.transports = transports
+
+    async def send_event(self, event: Event):
+        """Send event to all transports."""
+        tasks = [transport.send_event(event) for transport in self.transports]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
 class AsyncEventBus:
     """
     Async event bus with local in-process listeners + optional remote transport.
@@ -448,5 +461,20 @@ def create_transport(
             timeout=settings.http_timeout,
             event_filter=event_filter,
         )
+    elif settings.type == "composite":
+        transports = []
+        if settings.console_enabled:
+            transports.append(ConsoleTransport(event_filter=event_filter))
+        if settings.file_enabled and settings.path:
+            transports.append(FileTransport(filepath=settings.path, event_filter=event_filter))
+        if settings.http_enabled and settings.http_endpoint:
+            transports.append(HTTPTransport(
+                endpoint=settings.http_endpoint,
+                headers=settings.http_headers,
+                batch_size=settings.batch_size,
+                timeout=settings.http_timeout,
+                event_filter=event_filter,
+            ))
+        return CompositeTransport(transports)
     else:
         raise ValueError(f"Unsupported transport type: {settings.type}")

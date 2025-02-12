@@ -142,14 +142,17 @@ class LoggerSettings(BaseModel):
     Logger settings for the MCP Agent application.
     """
 
-    type: Literal["none", "console", "file", "http"] = "console"
+    type: Literal["none", "console", "file", "http", "composite"] = "console"
+    """Transport type to use"""
 
     level: Literal["debug", "info", "warning", "error"] = "info"
     """Minimum logging level"""
 
+    # File transport settings
     path: str = "mcp-agent.log"
     """Path to log file, if logger 'type' is 'file'."""
 
+    # Batch settings
     batch_size: int = 100
     """Number of events to accumulate before processing"""
 
@@ -163,11 +166,23 @@ class LoggerSettings(BaseModel):
     http_endpoint: str | None = None
     """HTTP endpoint for event transport"""
 
-    http_headers: dict[str, str] | None = None
-    """HTTP headers for event transport"""
+    http_headers: Dict[str, str] | None = None
+    """Headers to send with HTTP requests"""
 
     http_timeout: float = 5.0
-    """HTTP timeout seconds for event transport"""
+    """Timeout for HTTP requests in seconds"""
+
+    # Composite transport settings
+    console_enabled: bool = True
+    """Enable console output in composite transport"""
+
+    file_enabled: bool = True
+    """Enable file output in composite transport"""
+
+    http_enabled: bool = False
+    """Enable HTTP output in composite transport"""
+
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
 
 class Settings(BaseSettings):
