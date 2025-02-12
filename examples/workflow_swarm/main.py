@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from mcp_agent.app import MCPApp
 from mcp_agent.workflows.swarm.swarm import DoneAgent, SwarmAgent
-from mcp_agent.workflows.swarm.swarm_anthropic import AnthropicSwarm
+from mcp_agent.workflows.swarm.swarm_openai import OpenAISwarm
 from mcp_agent.human_input.handler import console_input_callback
 
 # Load environment variables from .env file
@@ -231,7 +231,7 @@ to LAX in Los Angeles. The flight # is 1919. The flight departure date is 3pm ET
     }
 
     triage_agent.instruction = triage_agent.instruction(context_variables)
-    swarm = AnthropicSwarm(agent=triage_agent, context_variables=context_variables)
+    swarm = OpenAISwarm(agent=triage_agent, context_variables=context_variables)
 
     triage_inputs = [
         "My bag was not delivered!",  # transfer_to_lost_baggage
@@ -251,7 +251,7 @@ to LAX in Los Angeles. The flight # is 1919. The flight departure date is 3pm ET
     for test in test_inputs[:1]:
         result = await swarm.generate_str(test)
         logger.info(f"Result: {result}")
-        swarm.set_agent(triage_agent)
+        await swarm.set_agent(triage_agent)
 
     await triage_agent.shutdown()
 

@@ -2,11 +2,15 @@ $schema: ../../schema/mcp-agent.config.schema.json
 
 execution_engine: asyncio
 logger:
-  type: console
-  level: debug
+  type: composite
+  level: info
+  path: _logs/mcp-agent-{timestamp}.log
   batch_size: 100
   flush_interval: 2
   max_queue_size: 2048
+  console_enabled: true
+  file_enabled: true
+  http_enabled: false
   http_endpoint:
   http_headers:
   http_timeout: 5
@@ -17,15 +21,19 @@ mcp:
       command: "uvx"
       args: ["mcp-server-fetch"]
     filesystem:
-      command: "npx"
+      command: "node"
       args:
         [
-          "-y",
-          "@modelcontextprotocol/server-filesystem",
-          "/Users/saqadri/Desktop",
-          "/Users/saqadri/Downloads",
+          "C:\\Users\\kevin\\AppData\\Roaming\\npm\\node_modules\\@modelcontextprotocol\\server-filesystem\\dist\\index.js",
+          "C:/Users/kevin/ClaudeMCPFolder",
+          "H:/temp storage",
+          "C:/Users/kevin/OneDrive/Desktop",
         ]
 
+# anthropic:
+#   # API key should be loaded from ANTHROPIC_API_KEY in .env file
+#   default_model: claude-3.5-sonnet
+
 openai:
-  # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
+  # API key should be loaded from OPENAI_API_KEY in .env file
   default_model: gpt-4o
