@@ -4,7 +4,7 @@ A central context object to store global state that is shared across the applica
 
 import asyncio
 import concurrent.futures
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING, Dict
 
 from pydantic import BaseModel, ConfigDict
 
@@ -161,6 +161,38 @@ async def configure_executor(config: "Settings"):
         # Default to asyncio executor
         executor = AsyncioExecutor()
         return executor
+
+
+def _get_debug_config(config: "Settings") -> Dict:
+    """
+    Extract only the non-sensitive configuration needed for debugging.
+    """
+    debug_config = {
+        'execution_engine': config.execution_engine,
+        'logger': {
+            'type': config.logger.type,
+            'level': config.logger.level,
+            'console_enabled': config.logger.console_enabled,
+            'file_enabled': config.logger.file_enabled,
+            'http_enabled': config.logger.http_enabled,
+        },
+        'otel': {
+            'enabled': config.otel.enabled,
+            'service_name': config.otel.service_name,
+            'console_debug': config.otel.console_debug,
+        },
+        'mcp': {
+            'servers': {
+                name: {
+                    'transport': server.transport,
+                    'command': server.command,
+                    'name': server.name,
+                    'description': server.description
+                } for name, server in config.mcp.servers.items()
+            }
+        }
+    }
+    return debug_config
 
 
 async def initialize_context(

@@ -96,6 +96,91 @@ Benefits:
 - Improved error visibility
 - Enhanced system observability
 
+## Logging Configuration and Debugging (2025-02-12)
+
+### Logging Level Configuration
+1. Config File Method
+   - Set in `mcp_agent.config.yaml`:
+   ```yaml
+   logger:
+     type: composite
+     level: debug  # or "info" for less verbose logging
+     path: _logs/mcp-agent-{timestamp}.log
+   ```
+
+2. Environment Variable Method
+   - Set using `MCP_AGENT__LOGGER__LEVEL=debug`
+   - Takes precedence over config file setting
+
+### Config File Loading
+- Config file must be explicitly loaded in custom applications
+- Use `get_settings()` to load and validate config:
+```python
+from pathlib import Path
+from mcp_agent.config import get_settings
+from mcp_agent.app import MCPApp
+
+config_path = Path(__file__).parent / 'mcp_agent.config.yaml'
+settings = get_settings(config_path)
+app = MCPApp(name="app_name", settings=settings)
+```
+
+### Debug Logging Features
+1. Message Details
+   - Full message structures before OpenAI API calls
+   - Complete OpenAI API request/response details
+   - Tool registration and capabilities
+   - Function call details and results
+
+2. Server Communication
+   - MCP server initialization logs
+   - Server capability negotiation
+   - Tool registration process
+   - Session management details
+
+3. Log File Organization
+   - Stored in `_logs` directory
+   - Filename format: `mcp-agent-{timestamp}.log`
+   - Both console and file logging supported
+   - Automatic redaction of sensitive information
+
+### Best Practices
+1. Development and Debugging
+   - Use debug level during development
+   - Monitor both console and file outputs
+   - Check logs for sensitive information leaks
+   - Use log files for troubleshooting
+
+2. Production Settings
+   - Set appropriate log level ("info" recommended)
+   - Configure log rotation if needed
+   - Monitor log file sizes
+   - Regular log cleanup
+
+3. Security Considerations
+   - Verify sensitive data redaction
+   - Protect log file access
+   - Regular log review for security
+   - Proper log file permissions
+
+### Known Issues and Solutions
+1. Config Loading
+   - Config file must be explicitly loaded
+   - Path must be correctly resolved
+   - Settings must be passed to MCPApp
+
+2. Log Level Override
+   - Environment variable takes precedence
+   - Config file setting as fallback
+   - Runtime changes possible through settings
+
+### Future Improvements
+1. Consider adding:
+   - Log rotation configuration
+   - Custom log formatters
+   - Additional transport options
+   - Enhanced security filtering
+
 ## Context Management System
 
 ### Core Architecture and Documentation (2025-02-12)

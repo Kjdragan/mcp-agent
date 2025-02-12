@@ -148,6 +148,28 @@ class OpenAIAugmentedLLM(
             if params.metadata:
                 arguments = {**arguments, **params.metadata}
 
+            # Validate message sequence before making the API call
+            if not self.validate_message_sequence(messages):
+                logger.error("Invalid message sequence detected. Aborting iteration.")
+                break
+
+            # Sanitize messages to remove any lingering tool_calls in assistant messages
+            self._sanitize_messages(messages)
+
+            # Debug log each message's structure
+            logger.debug("Message list structure before OpenAI call:")
+            for idx, msg in enumerate(messages):
+                logger.debug(
+                    f"Message {idx}:",
+                    data={
+                        "role": msg.get("role"),
+                        "content": msg.get("content"),
+                        "has_tool_calls": "tool_calls" in msg,
+                        "tool_call_id": msg.get("tool_call_id") if msg.get("role") == "tool" else None,
+                        "name": msg.get("name", None)
+                    }
+                )
+
             logger.debug(
                 f"Iteration {i}: Calling OpenAI ChatCompletion with messages:",
                 data=messages,
@@ -197,15 +219,14 @@ class OpenAIAugmentedLLM(
                 logger.debug(
                     f"Iteration {i}: Tool call results: {str(tool_results) if tool_results else 'None'}"
                 )
-                # Add non-None results to messages.
+                # Add all tool messages to the conversation history, even if they're empty
                 for result in tool_results:
                     if isinstance(result, BaseException):
                         logger.error(
                             f"Warning: Unexpected error during tool execution: {result}. Continuing..."
                         )
                         continue
-                    if result is not None:
-                        messages.append(result)
+                    messages.append(result)
             elif choice.finish_reason == "length":
                 # We have reached the max tokens limit
                 logger.debug(
@@ -303,10 +324,10 @@ class OpenAIAugmentedLLM(
     async def execute_tool_call(
         self,
         tool_call: ChatCompletionToolParam,
-    ) -> ChatCompletionToolMessageParam | None:
+    ) -> ChatCompletionToolMessageParam:
         """
         Execute a single tool call and return the result message.
-        Returns None if there's no content to add to messages.
+        Always returns a tool message, even if empty, as required by OpenAI.
         """
         tool_name = tool_call.function.name
         tool_args_str = tool_call.function.arguments
@@ -339,7 +360,12 @@ class OpenAIAugmentedLLM(
                 content=[mcp_content_to_openai_content(c) for c in result.content],
             )
 
-        return None
+        # Always return a tool message, even if empty
+        return ChatCompletionToolMessageParam(
+            role="tool",
+            tool_call_id=tool_call_id,
+            content="",  # Empty content is allowed
+        )
 
     def message_param_str(self, message: ChatCompletionMessageParam) -> str:
         """Convert an input message to a string representation."""
@@ -367,6 +393,47 @@ class OpenAIAugmentedLLM(
             return content
 
         return str(message)
+
+    def validate_message_sequence(self, messages: List[ChatCompletionMessageParam]) -> bool:
+        """
+        Validates that each tool message corresponds to a preceding message with tool_calls.
+        Returns True if the sequence is valid, False otherwise.
+        """
+        tool_calls_pending = {}  # Map of tool_call_id to assistant message index
+        for i, msg in enumerate(messages):
+            if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                for tool_call in msg["tool_calls"]:
+                    tool_calls_pending[tool_call["id"]] = i
+            elif msg.get("role") == "tool":
+                tool_call_id = msg.get("tool_call_id")
+                if tool_call_id not in tool_calls_pending:
+                    logger.error(f"Tool message at index {i} references non-existent tool_call_id: {tool_call_id}")
+                    return False
+                # Check if this tool message comes after its corresponding assistant message
+                if tool_calls_pending[tool_call_id] >= i:
+                    logger.error(f"Tool message at index {i} appears before its corresponding assistant message")
+                    return False
+                del tool_calls_pending[tool_call_id]
+        return True
+
+    def _sanitize_messages(self, messages: list):
+        """
+        Remove tool_calls field from any assistant messages and ensure content is a string for all messages.
+        Only remove tool_calls if they've been processed by their corresponding tool messages.
+        """
+        tool_messages = {msg.get("tool_call_id"): True for msg in messages if msg.get("role") == "tool"}
+        
+        for msg in messages:
+            if msg.get("role") == "assistant":
+                # Only remove tool_calls if all corresponding tool messages exist
+                if msg.get("tool_calls") and all(
+                    tool_call["id"] in tool_messages
+                    for tool_call in msg["tool_calls"]
+                ):
+                    del msg["tool_calls"]
+            # Ensure content is never null
+            if msg.get("content") is None:
+                msg["content"] = ""
 
 
 class MCPOpenAITypeConverter(

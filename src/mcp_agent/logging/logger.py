@@ -20,6 +20,31 @@ from mcp_agent.logging.listeners import BatchingListener, LoggingListener
 from mcp_agent.logging.transport import AsyncEventBus, EventTransport
 
 
+def _redact_sensitive_data(data: dict) -> dict:
+    """
+    Redact sensitive information from log data.
+    """
+    SENSITIVE_KEYS = {
+        'api_key', 'apikey', 'password', 'secret', 'token', 'auth', 
+        'authorization', 'private_key', 'privatekey', 'access_token',
+        'refresh_token', 'session_token'
+    }
+    
+    def _is_sensitive(key: str) -> bool:
+        key_lower = key.lower()
+        return any(sensitive in key_lower for sensitive in SENSITIVE_KEYS)
+    
+    redacted = {}
+    for key, value in data.items():
+        if _is_sensitive(key):
+            redacted[key] = "[REDACTED]"
+        elif isinstance(value, dict):
+            redacted[key] = _redact_sensitive_data(value)
+        else:
+            redacted[key] = value
+    return redacted
+
+
 class Logger:
     """
     Developer-friendly logger that sends events to the AsyncEventBus.
@@ -60,13 +85,16 @@ class Logger:
         data: dict,
     ):
         """Create and emit an event."""
+        # Redact any sensitive information from the data
+        safe_data = _redact_sensitive_data(data)
+        
         evt = Event(
             type=etype,
             name=ename,
             namespace=self.namespace,
             message=message,
             context=context,
-            data=data,
+            data=safe_data,
         )
         self._emit_event(evt)
 

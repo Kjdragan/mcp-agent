@@ -116,6 +116,37 @@ class MCPApp:
             self._logger = get_logger(f"mcp_agent.{self.name}")
         return self._logger
 
+    def _get_debug_config(self, config: Dict) -> Dict:
+        """
+        Extract only the non-sensitive configuration needed for debugging.
+        """
+        debug_config = {
+            'execution_engine': config.get('execution_engine'),
+            'logger': {
+                'type': config.get('logger', {}).get('type'),
+                'level': config.get('logger', {}).get('level'),
+                'console_enabled': config.get('logger', {}).get('console_enabled'),
+                'file_enabled': config.get('logger', {}).get('file_enabled'),
+                'http_enabled': config.get('logger', {}).get('http_enabled'),
+            },
+            'otel': {
+                'enabled': config.get('otel', {}).get('enabled'),
+                'service_name': config.get('otel', {}).get('service_name'),
+                'console_debug': config.get('otel', {}).get('console_debug'),
+            },
+            'mcp': {
+                'servers': {
+                    name: {
+                        'transport': server.get('transport'),
+                        'command': server.get('command'),
+                        'name': server.get('name'),
+                        'description': server.get('description')
+                    } for name, server in config.get('mcp', {}).get('servers', {}).items()
+                }
+            }
+        }
+        return debug_config
+
     async def initialize(self):
         """Initialize the application."""
         if self._initialized:

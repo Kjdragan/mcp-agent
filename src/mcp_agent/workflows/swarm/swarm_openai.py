@@ -3,6 +3,7 @@ from mcp_agent.workflows.llm.augmented_llm import RequestParams
 from mcp_agent.workflows.llm.augmented_llm_openai import OpenAIAugmentedLLM
 from mcp_agent.logging.logger import get_logger
 import re
+from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam, ChatCompletionAssistantMessageParam
 
 logger = get_logger(__name__)
 
@@ -12,13 +13,29 @@ class OpenAISwarm(Swarm, OpenAIAugmentedLLM):
     MCP version of the OpenAI Swarm class (https://github.com/openai/swarm.), using OpenAI's ChatCompletion as the LLM.
     """
 
-    def _sanitize_name(self, name: str) -> str:
+    @staticmethod
+    def _sanitize_name(name: str) -> str:
         """Sanitize name to match OpenAI's required pattern ^[a-zA-Z0-9_-]+$"""
         if not name:
             return "agent"
         # Replace any character that's not alphanumeric, underscore, or hyphen with underscore
         sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
         return sanitized
+
+    @classmethod
+    def convert_message_to_message_param(
+        cls, message: ChatCompletionMessage, **kwargs
+    ) -> ChatCompletionAssistantMessageParam:
+        """Convert a response object to an input parameter object with sanitized name."""
+        if 'name' in kwargs:
+            kwargs['name'] = cls._sanitize_name(kwargs['name'])
+        return ChatCompletionAssistantMessageParam(
+            role="assistant",
+            content=message.content,
+            audio=message.audio,
+            refusal=message.refusal,
+            **kwargs,
+        )
 
     async def generate(self, message, request_params: RequestParams | None = None):
         params = self.get_request_params(
