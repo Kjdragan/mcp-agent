@@ -170,8 +170,6 @@ examples/**/*.secrets.yaml
 # File generated from promptify script (to create an LLM-friendly prompt for the repo)
 project_contents.md
 
-_logs\
-
-
+_logs
 
 # .\examples\workflow_swarm\mcp_agent.secrets.yaml

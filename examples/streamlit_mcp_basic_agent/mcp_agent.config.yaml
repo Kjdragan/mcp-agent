@@ -2,30 +2,36 @@ $schema: ../../schema/mcp-agent.config.schema.json
 
 execution_engine: asyncio
 logger:
-  type: console
+  type: composite
   level: debug
+  path: _logs/mcp-agent-{timestamp}.log
   batch_size: 100
-  flush_interval: 2
+  flush_interval: 1
   max_queue_size: 2048
+  console_enabled: true
+  file_enabled: true
+  http_enabled: false
   http_endpoint:
   http_headers:
   http_timeout: 5
 
 mcp:
   servers:
-    fetch:
-      command: "uvx"
-      args: ["mcp-server-fetch"]
     filesystem:
-      command: "npx"
+      transport: stdio
+      command: "node"
+      read_timeout_seconds: 60
+      startup_timeout_seconds: 30
+      initialization_delay_seconds: 2
       args:
         [
-          "-y",
-          "@modelcontextprotocol/server-filesystem",
-          "/Users/saqadri/Desktop",
-          "/Users/saqadri/Downloads",
+          "C:\\Users\\kevin\\AppData\\Roaming\\npm\\node_modules\\@modelcontextprotocol\\server-filesystem\\dist\\index.js",
+          "C:\\Users\\kevin\\ClaudeMCPFolder"
         ]
+      env:
+        NODE_ENV: "production"
+        DEBUG: "*"
 
 openai:
-  # Secrets (API keys, etc.) are stored in an mcp_agent.secrets.yaml file which can be gitignored
-  default_model: gpt-4o
+  # API key should be loaded from OPENAI_API_KEY in .env file
+  default_model: gpt-4
