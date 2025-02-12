@@ -447,8 +447,13 @@ def create_transport(
     elif settings.type == "file":
         if not settings.path:
             raise ValueError("File path required for file transport")
+        
+        # Replace {timestamp} with current datetime
+        from datetime import datetime
+        filepath = settings.path.replace("{timestamp}", datetime.now().strftime("%Y%m%d_%H%M%S"))
+        
         return FileTransport(
-            filepath=settings.path,
+            filepath=filepath,
             event_filter=event_filter,
         )
     elif settings.type == "http":
@@ -466,7 +471,10 @@ def create_transport(
         if settings.console_enabled:
             transports.append(ConsoleTransport(event_filter=event_filter))
         if settings.file_enabled and settings.path:
-            transports.append(FileTransport(filepath=settings.path, event_filter=event_filter))
+            # Replace {timestamp} with current datetime
+            from datetime import datetime
+            filepath = settings.path.replace("{timestamp}", datetime.now().strftime("%Y%m%d_%H%M%S"))
+            transports.append(FileTransport(filepath=filepath, event_filter=event_filter))
         if settings.http_enabled and settings.http_endpoint:
             transports.append(HTTPTransport(
                 endpoint=settings.http_endpoint,
