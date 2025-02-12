@@ -16,9 +16,6 @@ async def example_usage():
 
         logger.info("Current config:", data=context.config.model_dump())
 
-        # Add the current directory to the filesystem server's args
-        context.config.mcp.servers["filesystem"].args.extend([os.getcwd()])
-
         finder_agent = Agent(
             name="finder",
             instruction="""You are an agent with access to the filesystem, 
