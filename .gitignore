@@ -173,3 +173,8 @@ project_contents.md
 _logs
 
 # .\examples\workflow_swarm\mcp_agent.secrets.yaml
+# Sensitive files
+examples/streamlit_mcp_basic_agent/StreamlitAgentChanges.md
+*.secrets.yaml
+*.env
+
