@@ -19,6 +19,11 @@ This document explores the different agent implementations in the MCP Agent fram
    - Purpose: Web-based interface for MCP Agent with LLM capabilities
    - Main Implementation: `examples/streamlit_mcp_basic_agent/main.py`
 
+4. **Swarm Agent**
+   - Path: `examples/workflow_swarm/`
+   - Purpose: Multi-agent coordination system
+   - Main Implementation: `examples/workflow_swarm/main.py`
+
 ---
 
 ## Detailed Agent Documentation
@@ -185,53 +190,6 @@ The Server Aggregator extends the basic agent's capabilities in several ways:
 
 ---
 
-### Server Aggregator vs Swarm Agent Comparison
-
-While both the Server Aggregator and Swarm agent support multiple MCP servers, there are important differences:
-
-#### Server Aggregator Advantages
-1. **Advanced Server Management**
-   - Dedicated tool namespacing
-   - More sophisticated connection persistence options
-   - Specialized error handling for server operations
-   - Primary focus on server coordination
-
-2. **Server-Specific Features**
-   - Built specifically for server aggregation
-   - More granular server control
-   - Advanced server state management
-   - Optimized for server-heavy operations
-
-#### Swarm Agent Server Support
-1. **Basic Multi-Server Support**
-   - Can use multiple servers simultaneously
-   - Basic server configuration
-   - Standard error handling
-   - Focused on agent coordination rather than server management
-
-2. **Integration Focus**
-   - Servers as tools for agent operations
-   - Less emphasis on server optimization
-   - Simpler server configuration
-   - Part of broader agent capabilities
-
-#### When to Use Each
-1. **Use Server Aggregator When**:
-   - Server management is primary concern
-   - Need advanced server features
-   - Require sophisticated tool namespacing
-   - Heavy focus on server operations
-
-2. **Use Swarm Agent When**:
-   - Need conversational capabilities
-   - Multi-agent coordination is priority
-   - Basic multi-server support is sufficient
-   - Focus is on policy-driven operations
-
-The Swarm agent does not have all the server management capabilities of the Server Aggregator, as server management is not its primary focus. Consider combining both patterns if you need both advanced server management and conversational capabilities.
-
----
-
 ### 3. Streamlit Basic Agent
 **Location**: `examples/streamlit_mcp_basic_agent/`
 **Core Implementation**: `examples/streamlit_mcp_basic_agent/main.py`
@@ -317,6 +275,98 @@ The Streamlit Agent enhances the basic agent with web and LLM capabilities:
    - Finding files and URLs based on natural language queries
    - Combining local and remote resource access
    - Presenting results in a user-friendly format
+
+---
+
+### 4. Swarm Agent
+**Location**: `examples/workflow_swarm/`
+**Core Implementation**: `examples/workflow_swarm/main.py`
+**Dependencies**: `openai`, `anthropic`
+
+#### Overview
+A multi-agent coordination system that leverages multiple LLM backends and coordinated task execution.
+
+#### Key Features
+
+1. **Multi-LLM Backend Support**
+   - Supports both OpenAI and Anthropic LLMs
+   - Coordinated task execution across LLMs
+   - Shared server access for fetch and filesystem operations
+
+2. **Environment-Based Configuration**
+   - Configures agent behavior through environment variables
+   - Supports dynamic configuration changes
+   - Environment variables in `.env`:
+     - `OPENAI_API_KEY`
+     - `ANTHROPIC_API_KEY`
+
+3. **Coordinated Task Execution**
+   - Executes tasks across multiple agents
+   - Supports concurrent task execution
+   - Coordinated error handling and recovery
+
+#### Use Cases
+
+1. **Complex Tasks**
+   - Tasks requiring multiple perspectives
+   - Tasks that benefit from model diversity
+   - File system operations with URL integration
+
+2. **Distributed Systems**
+   - Distributed system integration
+   - Robust error handling
+   - Scalable deployment scenarios
+
+#### Implementation Details
+
+1. **Agent Configuration**
+   ```python
+   # Location: examples/workflow_swarm/main.py
+   swarm_agent = SwarmAgent(
+       name="agent_name",
+       instruction=policy_based_instruction,
+       functions=[...],
+       server_names=["fetch", "filesystem"],
+       human_input_callback=callback
+   )
+   ```
+
+2. **LLM Setup**
+   - Attaches multiple LLMs to the agent
+   - Configures request parameters for history usage
+   - Handles async generation of responses
+
+#### Comparison with Basic Agent
+
+The Swarm Agent enhances the basic agent with multi-LLM support and coordinated task execution:
+
+1. **LLM Support**
+   - Basic Agent: Single LLM support
+   - Swarm Agent: Multiple LLM support with coordinated execution
+
+2. **Task Execution**
+   - Basic Agent: Single task execution
+   - Swarm Agent: Coordinated task execution across multiple agents
+
+3. **Error Handling**
+   - Basic Agent: Simple error handling
+   - Swarm Agent: Coordinated error handling and recovery
+
+4. **Use Case Focus**
+   - Basic Agent: Developer-focused tool interaction
+   - Swarm Agent: Complex tasks requiring multiple perspectives
+
+---
+
+## Lessons Learned from Basic Agent Implementation
+
+### Logging
+- **Use Built-in Logging**: Always use MCPApp's built-in logging system through `LoggerSettings` instead of custom configurations
+- **Configuration**: Set up logging through MCPApp initialization with appropriate settings for file and console output
+- **Best Practices**: 
+  - Use module-level loggers with `logging.getLogger(__name__)`
+  - Configure log levels appropriately (DEBUG for file, INFO for console)
+  - Let MCPApp handle log formatting and management
 
 ---
 
