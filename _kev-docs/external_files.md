@@ -223,3 +223,294 @@ Now that you understand both the code and its external dependencies:
 4. Build your own agent implementations
 
 Remember to always refer to this documentation when setting up new agents or troubleshooting issues.
+
+## Configuration Examples
+
+### 1. Common Configuration Patterns
+
+#### Basic Configuration
+```yaml
+# Minimal working configuration
+mcp:
+  servers:
+    filesystem:
+      transport: stdio
+      command: node
+      args:
+        - <filesystem_server_path>
+        - "./allowed/path1"
+    fetch:
+      transport: stdio
+      command: uvx
+      args:
+        - mcp-server-fetch
+
+openai:
+  default_model: gpt-4o
+```
+
+#### Advanced Configuration
+```yaml
+# Production-ready configuration
+mcp:
+  servers:
+    filesystem:
+      transport: stdio
+      command: node
+      args:
+        - <filesystem_server_path>
+        - "./data"
+        - "./configs"
+        - "./output"
+      read_timeout_seconds: 30
+      env:
+        NODE_ENV: production
+    
+    fetch:
+      transport: stdio
+      command: uvx
+      args:
+        - mcp-server-fetch
+      read_timeout_seconds: 60
+
+execution_engine: asyncio
+openai:
+  default_model: gpt-4o
+  base_url: https://api.openai.com/v1
+
+logger:
+  type: console
+  level: info
+  path: logs/mcp-agent.log
+  batch_size: 100
+```
+
+### 2. Environment Variables Best Practices
+
+#### Basic .env
+```shell
+# Minimum required
+OPENAI_API_KEY=sk-...
+
+# Optional but recommended
+MCP_LOG_LEVEL=info
+NODE_ENV=development
+```
+
+#### Production .env
+```shell
+# API Keys
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-...
+GOOGLE_API_KEY=...
+
+# Configuration
+MCP_LOG_LEVEL=info
+NODE_ENV=production
+MCP_TIMEOUT_SECONDS=60
+MCP_MAX_RETRIES=3
+
+# Paths
+MCP_CONFIG_PATH=/etc/mcp/config.yaml
+MCP_LOG_PATH=/var/log/mcp/agent.log
+```
+
+## Real-World Configuration Scenarios
+
+### 1. Development Setup
+```yaml
+# mcp_agent.config.yaml
+mcp:
+  servers:
+    filesystem:
+      transport: stdio
+      command: node
+      args:
+        - "./dev/data"
+        - "./dev/temp"
+      env:
+        NODE_ENV: development
+logger:
+  level: debug
+  console_debug: true
+```
+
+### 2. Production Setup
+```yaml
+# mcp_agent.config.yaml
+mcp:
+  servers:
+    filesystem:
+      transport: stdio
+      command: node
+      args:
+        - "/data/prod"
+        - "/data/backup"
+      env:
+        NODE_ENV: production
+logger:
+  level: info
+  path: /var/log/mcp/agent.log
+  batch_size: 1000
+```
+
+### 3. Testing Setup
+```yaml
+# mcp_agent.config.yaml
+mcp:
+  servers:
+    filesystem:
+      transport: stdio
+      command: node
+      args:
+        - "./test/fixtures"
+      env:
+        NODE_ENV: test
+logger:
+  level: debug
+  console_debug: true
+```
+
+## Configuration Troubleshooting
+
+### 1. YAML Validation Errors
+
+```yaml
+# ❌ Invalid Configuration
+mcp:
+  servers:
+    filesystem:
+      transport: invalid  # Error: must be 'stdio'
+      command: node
+      args:
+        - path1
+        - path2
+
+# ✅ Fixed Configuration
+mcp:
+  servers:
+    filesystem:
+      transport: stdio    # Fixed: using valid transport
+      command: node
+      args:
+        - path1
+        - path2
+```
+
+### 2. Path Resolution Issues
+
+```yaml
+# ❌ Problematic Paths
+filesystem:
+  args:
+    - "C:\Program Files\data"  # Error: backslashes
+    - "./relative/path"        # Warning: relative path
+
+# ✅ Fixed Paths
+filesystem:
+  args:
+    - "C:/Program Files/data"  # Fixed: forward slashes
+    - "/absolute/path"         # Fixed: absolute path
+```
+
+### 3. Environment Loading Issues
+
+```python
+# ❌ Common Problems
+env_path = '.env'  # Error: relative path
+load_dotenv(env_path)
+
+# ✅ Fixed Loading
+env_path = Path(__file__).resolve().parents[2] / '.env'
+load_dotenv(env_path)
+```
+
+## Server Configuration Patterns
+
+### 1. Filesystem Server
+
+#### Basic Access
+```yaml
+filesystem:
+  transport: stdio
+  command: node
+  args:
+    - "./data"  # Single directory
+```
+
+#### Multi-Directory Access
+```yaml
+filesystem:
+  transport: stdio
+  command: node
+  args:
+    - "./data"          # Main data
+    - "./temp"          # Temporary files
+    - "./user_files"    # User uploads
+```
+
+#### Restricted Access
+```yaml
+filesystem:
+  transport: stdio
+  command: node
+  args:
+    - "./data/read_only"     # Read-only data
+    - "./data/temp"          # Temporary storage
+  env:
+    RESTRICT_WRITE: "true"   # Enable write restrictions
+```
+
+### 2. Fetch Server
+
+#### Basic Setup
+```yaml
+fetch:
+  transport: stdio
+  command: uvx
+  args:
+    - mcp-server-fetch
+```
+
+#### With Timeouts
+```yaml
+fetch:
+  transport: stdio
+  command: uvx
+  args:
+    - mcp-server-fetch
+    - --timeout=30
+  read_timeout_seconds: 30
+```
+
+#### With Rate Limiting
+```yaml
+fetch:
+  transport: stdio
+  command: uvx
+  args:
+    - mcp-server-fetch
+    - --rate-limit=10
+    - --rate-window=60
+```
+
+## Best Practices Checklist
+
+### 1. Security
+- [ ] Use absolute paths
+- [ ] Restrict directory access
+- [ ] Keep API keys in .env
+- [ ] Set appropriate timeouts
+- [ ] Enable logging
+
+### 2. Performance
+- [ ] Configure batch sizes
+- [ ] Set appropriate timeouts
+- [ ] Enable caching if needed
+- [ ] Configure rate limits
+
+### 3. Maintenance
+- [ ] Use clear directory structure
+- [ ] Document all configurations
+- [ ] Set up logging
+- [ ] Configure error handling

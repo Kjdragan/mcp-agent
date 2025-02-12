@@ -127,6 +127,178 @@ Entry point:
 - Uses asyncio.run() to handle async code
 - Provides timing information
 
+## Understanding the Code Flow
+
+Let's walk through how the code actually works in practice:
+
+### 1. Startup Sequence
+
+When you run `main.py`, this is what happens behind the scenes:
+
+```python
+# 1. Environment Loading
+env_path = Path(__file__).resolve().parents[2] / '.env'
+load_dotenv(env_path)
+```
+This loads your OpenAI API key and other secrets. Without this, the agent can't authenticate with OpenAI.
+
+```python
+# 2. App Creation
+app = MCPApp(name="mcp_basic_agent")
+```
+The app is created and immediately:
+- Loads `mcp_agent.config.yaml` from the project root
+- Sets up logging (you'll see this in your terminal)
+- Initializes the execution engine (asyncio)
+
+### 2. Real-World Example: File Listing
+
+Let's break down what happens when the agent lists files:
+
+```python
+async with finder_agent:
+    # 1. Server Connection
+    # The agent connects to both the filesystem and fetch servers
+    # You'll see log messages for each connection
+    
+    # 2. Tool Discovery
+    result = await finder_agent.list_tools()
+    # This shows you what operations are available
+    # e.g., read_file, list_directory, fetch_url, etc.
+    
+    # 3. LLM Attachment
+    llm = await finder_agent.attach_llm(OpenAIAugmentedLLM)
+    
+    # 4. File Listing Request
+    result = await llm.generate_str(
+        message="List all files in C:/Users/kevin/ClaudeMCPFolder",
+    )
+    # The LLM:
+    # a) Understands the natural language request
+    # b) Chooses the appropriate tool (filesystem-list_directory)
+    # c) Calls the tool with the correct path
+    # d) Formats the response for human reading
+```
+
+### 3. Behind the Scenes: Server Communication
+
+When the agent talks to servers, here's what's happening:
+
+```python
+# 1. Filesystem Server
+filesystem_server = {
+    "transport": "stdio",  # Uses standard I/O for communication
+    "command": "node",     # Runs a Node.js server
+    "args": [
+        # The server is given specific allowed directories
+        "C:/Users/kevin/ClaudeMCPFolder",
+        "H:/temp storage",
+        "C:/Users/kevin/OneDrive/Desktop"
+    ]
+}
+
+# 2. Communication Flow
+# When you request "List files in directory":
+# a) Agent → LLM: "What tool should I use?"
+# b) LLM → Agent: "Use filesystem-list_directory"
+# c) Agent → Filesystem Server: JSON request with path
+# d) Server: Checks if path is allowed
+# e) Server → Agent: JSON response with file list
+# f) Agent → LLM: "Format this response"
+# g) LLM → User: Formatted file list
+```
+
+### 4. Error Handling Examples
+
+Here's how the agent handles common issues:
+
+```python
+# 1. Invalid Directory
+try:
+    result = await llm.generate_str(
+        message="List files in C:/NotAllowed",
+    )
+except Exception as e:
+    # The filesystem server will reject this
+    # You'll see: "Path not in allowed directories"
+    logger.error(f"Access denied: {e}")
+
+# 2. API Key Issues
+if not os.getenv("OPENAI_API_KEY"):
+    # The agent will fail early with a clear message
+    # You'll see: "OpenAI API key not found"
+    logger.error("Missing API key")
+
+# 3. Server Connection Issues
+async with finder_agent:
+    try:
+        # If the filesystem server isn't running
+        # You'll see: "Failed to connect to server"
+        await finder_agent.connect()
+    except ConnectionError as e:
+        logger.error(f"Server connection failed: {e}")
+```
+
+### 5. Debugging Tips
+
+When something goes wrong, here's what to check:
+
+1. **Check the Logs**
+   ```python
+   # Look for these log messages:
+   "Loading .env from: ..."        # Confirms env loading
+   "Current config: ..."           # Shows loaded config
+   "Connected to server ..."       # Server connections
+   "Tools available: ..."          # Available operations
+   ```
+
+2. **Common Issues**
+   - If OpenAI calls fail: Check `.env` and `OPENAI_API_KEY`
+   - If file operations fail: Check allowed directories in config
+   - If servers won't connect: Check Node.js installation
+
+3. **Adding Debug Logging**
+   ```python
+   # Add these to debug issues:
+   logger.info("Config loaded:", data=context.config.model_dump())
+   logger.info("Attempting server connection...")
+   logger.info("Tool call result:", data=result.model_dump())
+   ```
+
+### 6. Tool Usage Examples
+
+Here's how different tools are used:
+
+```python
+# 1. Reading a File
+result = await llm.generate_str(
+    message="Read the contents of config.txt",
+)
+# The agent will:
+# a) Check if the file is in an allowed directory
+# b) Use filesystem-read_file
+# c) Return the contents
+
+# 2. Fetching a URL
+result = await llm.generate_str(
+    message="Get content from https://example.com",
+)
+# The agent will:
+# a) Use the fetch server
+# b) Download and process the content
+# c) Return formatted results
+
+# 3. Combined Operations
+result = await llm.generate_str(
+    message="Find config files and check their URLs",
+)
+# The agent will:
+# a) List directories for config files
+# b) Read found files
+# c) Extract and verify URLs
+# d) Return a summary
+```
+
 ## Key Concepts Demonstrated
 
 ### 1. Async/Await Pattern
